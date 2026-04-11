@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kuliner Nusantara</title>
+
+<style>
+:root{
+  --primary:#00aa13;
+  --bg:#f5f7fa;
+  --card:#ffffff;
+}
+
+*{box-sizing:border-box;font-family:Arial;margin:0;padding:0}
+body{background:var(--bg)}
+
+header{
+  background: url('/kk.jpeg') center/cover no-repeat;
+  color:white;
+  text-align:center;
+  padding:40px 15px;
+  position:relative;
+}
+
+header::after{
+  content:'';
+  position:absolute;
+  top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.5);
+}
+
+header h2, header p{
+  position:relative;
+  z-index:1;
+}
+
+nav{
+  display:flex;
+  justify-content:space-around;
+  background:white;
+  padding:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+  position:sticky;
+  top:0;
+}
+
+nav button{
+  background:#ff7a00;
+  color:white;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#e66900;
+}
+
+.page{display:none;padding:15px}
+.active{display:block}
+
+.search input{
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  margin-bottom:10px;
+}
+
+.filter{text-align:center;margin-bottom:10px}
+.filter button{margin:3px;padding:6px 10px}
+
+.container{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:12px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:12px;
+  padding:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  transition:0.2s;
+}
+
+.card:hover{transform:translateY(-3px)}
+
+.card img{
+  width:100%;
+  height:120px;
+  object-fit:cover;
+  border-radius:10px;
+}
+
+.card h4{margin:5px 0}
+.rating{color:orange;font-size:14px}
+
+.qty{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  margin-top:5px;
+}
+
+button{
+  background:var(--primary);
+  color:white;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.cart-box{
+  background:white;
+  padding:12px;
+  border-radius:10px;
+  margin-top:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.08);
+}
+
+input,textarea{
+  width:100%;
+  padding:10px;
+  margin-top:8px;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+
+.modal{
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.5);
+  display:none;
+  justify-content:center;
+  align-items:center;
+}
+
+.modal-content{
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  width:90%;
+  max-width:400px;
+}
+
+@media(max-width:600px){
+  header h2{font-size:18px}
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+<h2>Kuliner Nusantara</h2>
+<p>Makanan Enak, Harga Bersahabat</p>
+</header>
+
+<nav>
+<button onclick="showPage('menu')">Menu</button>
+<button onclick="showPage('cart')">Keranjang</button>
+<button onclick="showPage('map')">Lokasi</button>
+<button onclick="showPage('login')">Login</button>
+</nav>
+
+<!-- MENU -->
+<div id="menu" class="page active">
+<div class="search">
+<input placeholder="🔍 Cari menu..." onkeyup="searchMenu(this.value)">
+</div>
+
+<div class="filter">
+<button onclick="filterMenu('all')">All</button>
+<button onclick="filterMenu('makanan')">Makanan</button>
+<button onclick="filterMenu('minuman')">Minuman</button>
+</div>
+
+<div class="container" id="menuList"></div>
+</div>
+
+<!-- CART -->
+<div id="cart" class="page">
+<h3>Keranjang 🛒</h3>
+<div class="cart-box">
+<ul id="cartList"></ul>
+<p><b>Total: Rp <span id="total">0</span></b></p>
+<button onclick="checkout()">Checkout WhatsApp</button>
+<button onclick="window.print()">🧾 Invoice</button>
+</div>
+
+<h3>Form Pemesanan</h3>
+<input id="nama" placeholder="Nama">
+<textarea id="alamat" placeholder="Alamat"></textarea>
+</div>
+
+<!-- MAP -->
+<div id="map" class="page">
+<h3>📍 Lokasi Kami</h3>
+<iframe src="https://www.google.com/maps?q=-6.2,106.8&output=embed" width="100%" height="300"></iframe>
+</div>
+
+<!-- LOGIN -->
+<div id="login" class="page">
+<h3>🔐 Login</h3>
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<p id="status"></p>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="popup">
+<div class="modal-content" id="popupContent"></div>
+</div>
+
+<script>
+let menu=[
+{nama:'Nasi Goreng',harga:15000,kategori:'makanan',img:'nasi goreng.jpg',qty:0,rating:5},
+{nama:'Ayam Goreng',harga:18000,kategori:'makanan',img:'ayam goreng.avif',qty:0,rating:4},
+{nama:'Mie Ayam',harga:12000,kategori:'makanan',img:'mie ayam.jpg',qty:0,rating:4},
+{nama:'Sate Ayam',harga:20000,kategori:'makanan',img:'sate ayam.jpg',qty:0,rating:5},
+{nama:'Bakso',harga:13000,kategori:'makanan',img:'bakso.jpeg',qty:0,rating:4},
+
+{nama:'Es Teh',harga:5000,kategori:'minuman',img:'es teh.jpeg',qty:0,rating:4},
+{nama:'Kopi Hitam',harga:10000,kategori:'minuman',img:'kopi hitam.jpg',qty:0,rating:5},
+{nama:'Jus Jeruk',harga:8000,kategori:'minuman',img:'jus jeruk.jfif',qty:0,rating:4},
+{nama:'Es Coklat',harga:12000,kategori:'minuman',img:'es coklat.webp',qty:0,rating:5},
+{nama:'Milkshake',harga:15000,kategori:'minuman',img:'milkshake.avif',qty:0,rating:5}
+];
+
+if(localStorage.getItem('menu')) menu=JSON.parse(localStorage.getItem('menu'));
+
+function render(data=menu){
+let html='';
+data.forEach((m,i)=>{
+html+=`<div class="card" onclick="detail(${i})">
+<img src="${m.img}">
+<h4>${m.nama}</h4>
+<div class="rating">${'⭐'.repeat(m.rating)}</div>
+<p>Rp ${m.harga}</p>
+<div class="qty">
+<button onclick="event.stopPropagation();kurang(${i})">-</button>
+<span>${m.qty}</span>
+<button onclick="event.stopPropagation();tambah(${i})">+</button>
+</div>
+</div>`});
+
+document.getElementById('menuList').innerHTML=html;
+renderCart();
+}
+
+function tambah(i){menu[i].qty++;save()}
+function kurang(i){if(menu[i].qty>0)menu[i].qty--;save()}
+
+function renderCart(){
+let list='';let total=0;
+menu.forEach(m=>{
+if(m.qty>0){
+list+=`<li>${m.nama} x${m.qty} <button onclick="removeItem('${m.nama}')">❌</button></li>`;
+total+=m.qty*m.harga;
+}});
+
+document.getElementById('cartList').innerHTML=list;
+document.getElementById('total').innerText=total;
+}
+
+function removeItem(nama){
+menu.forEach(m=>{if(m.nama===nama)m.qty=0});
+save();
+}
+
+function save(){
+localStorage.setItem('menu',JSON.stringify(menu));
+render();
+}
+
+function searchMenu(val){
+render(menu.filter(m=>m.nama.toLowerCase().includes(val.toLowerCase())));
+}
+
+function filterMenu(k){
+if(k==='all') return render();
+render(menu.filter(m=>m.kategori===k));
+}
+
+function detail(i){
+document.getElementById('popup').style.display='flex';
+document.getElementById('popupContent').innerHTML=`
+<h3>${menu[i].nama}</h3>
+<img src="${menu[i].img}" style="width:100%">
+<p>Harga: Rp ${menu[i].harga}</p>
+<p>Rating: ${'⭐'.repeat(menu[i].rating)}</p>
+<button onclick="tambah(${i})">Tambah</button>
+<button onclick="closePopup()">Tutup</button>`;
+}
+
+function closePopup(){document.getElementById('popup').style.display='none'}
+
+function checkout(){
+let nama=document.getElementById('nama').value;
+let alamat=document.getElementById('alamat').value;
+if(!nama||!alamat)return alert('Isi data dulu!');
+
+let pesan='Pesanan:%0A';
+menu.forEach(m=>{if(m.qty>0)pesan+=m.nama+' x'+m.qty+'%0A'});
+pesan+='%0ANama:'+nama+'%0AAlamat:'+alamat;
+window.open('https://wa.me/6281234567890?text='+pesan);
+}
+
+function showPage(id){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+}
+
+function login(){
+status.innerText=(user.value==='admin'&&pass.value==='123')?'Login berhasil':'Login gagal';
+}
+
+render();
+</script>
+
+
+<!-- FOOTER -->
+<footer style="background:#222;color:white;padding:20px;margin-top:20px">
+  <div style="max-width:900px;margin:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px">
+    
+    <div>
+      <h4>📍 Alamat</h4>
+      <p>Jl. Contoh No.123, Tangerang, Indonesia</p>
+    </div>
+
+    <div>
+      <h4>📞 Kontak</h4>
+      <p>HP: 0812-3456-7890</p>
+    </div>
+
+    <div>
+      <h4>🗺️ Lokasi</h4>
+      <iframe src="https://www.google.com/maps?q=-6.2,106.8&output=embed" width="100%" height="150" style="border-radius:8px"></iframe>
+    </div>
+
+  </div>
+  <p style="text-align:center;margin-top:15px">&copy; 2026 Kuliner Nusantara</p>
+</footer>
+
+</body>
+</html>
